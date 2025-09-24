@@ -44,6 +44,7 @@ function exibirDetalhesHistorico(index) {
   alert(mensagem);
 }
 
+
 function atualizarHistorico() {
   var lista = document.getElementById('historicoLista');
   lista.innerHTML = '';
