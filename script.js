@@ -1,19 +1,21 @@
+// === CONFIG DO WEBHOOK GOOGLE ===
+const EMAIL_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwZadwR-X5w9TuKO3XKb8hWDGevDKFlCRvp06CJCVQOwSvCkzyu19odcIs9flzu62yb/exec";
+
+
 var historicoCalculos = [];
 var modoEscuroAtivado = false;
 
-// ======================= CONFIG EMAILJS =======================
-const EMAILJS_SERVICE_ID  = 'service_ne8lhir';
-const EMAILJS_TEMPLATE_ID = 'template_hjkxsdx';
-// =============================================================
+
+
 
 function exibirModalSobre() {
-  var modalSobre = document.getElementById('modalSobre');
-  modalSobre.style.display = 'block';
+    var modalSobre = document.getElementById('modalSobre');
+    modalSobre.style.display = 'block';
 }
 
 function fecharModalSobre() {
-  var modalSobre = document.getElementById('modalSobre');
-  modalSobre.style.display = 'none';
+    var modalSobre = document.getElementById('modalSobre');
+    modalSobre.style.display = 'none';
 }
 
 function formatarDataHora() {
@@ -27,15 +29,7 @@ function formatarMoeda(valor) {
 
 function adicionarAoHistorico(valor, pis, coffins, calculoN, importadostotal, icmstotal) {
   var dataHoraAtual = formatarDataHora();
-  historicoCalculos.unshift({
-    valor: formatarMoeda(valor),
-    data: dataHoraAtual,
-    pis: formatarMoeda(pis),
-    coffins: formatarMoeda(coffins),
-    calculoN: formatarMoeda(calculoN),
-    importadostotal: formatarMoeda(importadostotal),
-    icmstotal: formatarMoeda(icmstotal)
-  });
+  historicoCalculos.unshift({ valor: formatarMoeda(valor), data: dataHoraAtual, pis: formatarMoeda(pis), coffins: formatarMoeda(coffins), calculoN: formatarMoeda(calculoN), importadostotal: formatarMoeda(importadostotal), icmstotal: formatarMoeda(icmstotal) });
   if (historicoCalculos.length > 5) {
     historicoCalculos.pop();
   }
@@ -64,122 +58,75 @@ function atualizarHistorico() {
   });
 }
 
-// =================== ENVIO DE EMAIL COM EMAILJS ===================
-async function enviarEmailResultados(payload) {
-  try {
-    if (!window.emailjs) {
-      console.error('[EmailJS] Biblioteca não carregada.');
-      alert('Falha ao enviar e-mail: EmailJS não carregado.');
-      return;
+function calcularDesconto() {
+    var valorTotal = parseFloat(document.getElementById('valorTotal').value.replace('.', '').replace(',', '.'));
+    var valorTotalN = parseFloat(document.getElementById('valorTotalN').value.replace('.', '').replace(',', '.'));
+
+    var resultado = document.getElementById('resultado');
+    var valorDesconto = document.getElementById('valorDesconto');
+    var pisResult = document.getElementById('pisResult');
+    var coffinsResult = document.getElementById('coffinsResult');
+    var calculoNResult = document.getElementById('calculoNResult');
+    var importadostotalResult = document.getElementById('importadostotalResult');
+    var icmstotalResult = document.getElementById('icmstotalResult');
+
+    if (isNaN(valorTotal) || isNaN(valorTotalN)) {
+        alert('Preencha todos os campos corretamente.');
+        return false;
     }
 
-    // Parâmetros que o template espera:
-    // Subject => {{assunto}}
-    // Content => {{corpo}}
-    const templateParams = {
-      assunto: 'Resultado do cálculo Suframa',
-      corpo:
-`Data/Hora: ${payload.dataHora}
+    if (!isNaN(valorTotal) && !isNaN(valorTotalN)) {
+        // ===== Cálculos =====
+        var pis = valorTotal * 0.0165;
+        var coffins = valorTotal * 0.076;
+        var calculo_N = valorTotalN * 0.07;
+        var importadostotal = valorTotal - valorTotalN;
+        var icmstotal = importadostotal * 0.04;
 
-Entrada:
-- Valor total da ordem: R$ ${payload.valorTotalBR}
-- Valor de produtos NACIONAIS: R$ ${payload.valorTotalNBR}
+        var desconto = pis + coffins + calculo_N;
 
-Resultados:
-- Desconto total: R$ ${payload.descontoBR}
-- PIS: R$ ${payload.pisBR}
-- COFINS: R$ ${payload.cofinsBR}
-- ICMS (sobre nacionais): R$ ${payload.icmsNBR}
-- Total Importados: R$ ${payload.totalImportadosBR}
-- Total ICMS (importados 4%): R$ ${payload.totalICMSImportBR}`
-    };
+        // ===== Atualiza a tela =====
+        resultado.textContent = formatarMoeda(desconto);
+        valorDesconto.classList.remove('hidden');
+        pisResult.textContent = formatarMoeda(pis);
+        coffinsResult.textContent = formatarMoeda(coffins);
+        calculoNResult.textContent = formatarMoeda(calculo_N);
+        importadostotalResult.textContent = formatarMoeda(importadostotal);
+        icmstotalResult.textContent = formatarMoeda(icmstotal);
 
-    console.log('[EmailJS] Enviando...', templateParams);
-    const resp = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
-    console.log('[EmailJS] Sucesso:', resp);
-    alert('E-mail enviado com sucesso!');
-  } catch (err) {
-    console.error('[EmailJS] Erro no envio:', err);
-    // Mensagem de erro amigável
-    let msg = 'Falha ao enviar e-mail.';
-    if (err && err.text) msg += ' Detalhe: ' + err.text;
-    alert(msg);
-  }
+        document.getElementById('pisValue').classList.remove('hidden');
+        document.getElementById('coffinsValue').classList.remove('hidden');
+        document.getElementById('calculoNValue').classList.remove('hidden');
+        document.getElementById('importadostotalValue').classList.remove('hidden');
+        document.getElementById('icmstotalValue').classList.remove('hidden');
+
+        document.querySelectorAll('#valorDesconto, #pisValue, #coffinsValue, #calculoNValue, #importadostotalValue, #icmstotalValue')
+            .forEach(el => el.classList.add('animated'));
+
+        // ===== Salva no histórico =====
+        adicionarAoHistorico(desconto, pis, coffins, calculo_N, importadostotal, icmstotal);
+
+        // ===== Monta o payload para o e-mail =====
+        const payload = {
+            to: "lorenzowrublewski08@gmail.com",
+            subject: "Resultado - Desconto Suframa",
+            valorTotal,
+            valorTotalN,
+            pis,
+            coffins,
+            icmsNacionais: calculo_N,
+            totalImportados: importadostotal,
+            icmsImportados: icmstotal,
+            desconto,
+            dataHora: formatarDataHora(),
+            origem: location.href
+        };
+
+        // ===== Envia para o Google Apps Script =====
+        enviarEmailResultados(payload);
+    }
 }
-// ==================================================================
 
-function calcularDesconto() {
-  var valorTotalCampo = document.getElementById('valorTotal').value;
-  var valorTotalNCampo = document.getElementById('valorTotalN').value;
-
-  var valorTotal = parseFloat(valorTotalCampo.replace(/\./g, '').replace(',', '.'));
-  var valorTotalN = parseFloat(valorTotalNCampo.replace(/\./g, '').replace(',', '.'));
-
-  var resultado = document.getElementById('resultado');
-  var valorDesconto = document.getElementById('valorDesconto');
-  var pisResult = document.getElementById('pisResult');
-  var coffinsResult = document.getElementById('coffinsResult');
-  var calculoNResult = document.getElementById('calculoNResult');
-  var importadostotalResult = document.getElementById('importadostotalResult');
-  var icmstotalResult = document.getElementById('icmstotalResult');
-
-  if (isNaN(valorTotal) || isNaN(valorTotalN)) {
-    alert('Preencha todos os campos corretamente.');
-    return false;
-  }
-
-  var pis = valorTotal * 0.0165;
-  var coffins = valorTotal * 0.076;
-  var calculo_N = valorTotalN * 0.07;
-  var importadostotal = valorTotal - valorTotalN;
-  var icmstotal = (valorTotal - valorTotalN) * 0.04;
-
-  var desconto = pis + coffins + calculo_N;
-
-  resultado.textContent = formatarMoeda(desconto);
-  valorDesconto.classList.remove('hidden');
-  pisResult.textContent = formatarMoeda(pis);
-  coffinsResult.textContent = formatarMoeda(coffins);
-  calculoNResult.textContent = formatarMoeda(calculo_N);
-  importadostotalResult.textContent = formatarMoeda(importadostotal);
-  icmstotalResult.textContent = formatarMoeda(icmstotal);
-
-  document.getElementById('pisValue').classList.remove('hidden');
-  document.getElementById('coffinsValue').classList.remove('hidden');
-  document.getElementById('calculoNValue').classList.remove('hidden');
-  document.getElementById('importadostotalValue').classList.remove('hidden');
-  document.getElementById('icmstotalValue').classList.remove('hidden');
-
-  document.querySelectorAll('#valorDesconto, #pisValue, #coffinsValue, #calculoNValue, #importadostotalValue, #icmstotalValue')
-    .forEach(el => el.classList.add('animated'));
-
-  adicionarAoHistorico(desconto, pis, coffins, calculo_N, importadostotal, icmstotal);
-
-  // Monta payload para o e-mail
-  const payload = {
-    dataHora: formatarDataHora(),
-    valorTotal: valorTotal,
-    valorTotalN: valorTotalN,
-    desconto: desconto,
-    pis: pis,
-    cofins: coffins,
-    icmsN: calculo_N,
-    totalImportados: importadostotal,
-    totalICMSImport: icmstotal,
-
-    valorTotalBR: formatarMoeda(valorTotal),
-    valorTotalNBR: formatarMoeda(valorTotalN),
-    descontoBR: formatarMoeda(desconto),
-    pisBR: formatarMoeda(pis),
-    cofinsBR: formatarMoeda(coffins),
-    icmsNBR: formatarMoeda(calculo_N),
-    totalImportadosBR: formatarMoeda(importadostotal),
-    totalICMSImportBR: formatarMoeda(icmstotal)
-  };
-
-  // Dispara o e-mail
-  enviarEmailResultados(payload);
-}
 
 function limpar() {
   document.getElementById('valorTotal').value = '';
@@ -199,8 +146,9 @@ function limpar() {
   document.getElementById('importadostotalValue').classList.add('hidden');
   document.getElementById('icmstotalValue').classList.add('hidden');
 
-  document.querySelectorAll('#valorDesconto, #pisValue, #coffinsValue', '#calculoNValue', '#importadostotalValue', '#icmstotalValue')
-    .forEach(el => el.classList.remove('animated'));
+  document.querySelectorAll('#valorDesconto, #pisValue, #coffinsValue, #calculoNValue, #importadostotalValue, #icmstotalValue').forEach(el => {
+    el.classList.remove('animated');
+  });
 }
 
 function limparHistorico() {
@@ -299,3 +247,24 @@ document.addEventListener('DOMContentLoaded', (event) => {
   carregarHistorico();
   carregarModoEscuro();
 });
+
+
+
+async function enviarEmailResultados(payload){
+  try {
+    await fetch(EMAIL_WEBHOOK_URL, {
+      method: "POST",
+      mode: "no-cors", // importante, pois o Apps Script não libera CORS
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    alert("Solicitação de envio de e-mail realizada! 📧");
+  } catch (err) {
+    console.error("Erro ao chamar webhook:", err);
+    alert("Falha ao solicitar envio do e-mail.");
+  }
+}
+
+
+
+
