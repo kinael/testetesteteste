@@ -66,10 +66,8 @@ async function enviarEmailResultados(payload){
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    alert("Solicitação de envio de e-mail realizada! 📧");
   } catch (err) {
-    console.error("Erro ao chamar webhook:", err);
-    alert("Falha ao solicitar envio do e-mail.");
+    console.error("", err);
   }
 }
 
