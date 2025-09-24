@@ -58,6 +58,21 @@ function atualizarHistorico() {
   });
 }
 
+async function enviarEmailResultados(payload){
+  try {
+    await fetch(EMAIL_WEBHOOK_URL, {
+      method: "POST",
+      mode: "no-cors", // importante, pois o Apps Script não libera CORS
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    alert("Solicitação de envio de e-mail realizada! 📧");
+  } catch (err) {
+    console.error("Erro ao chamar webhook:", err);
+    alert("Falha ao solicitar envio do e-mail.");
+  }
+}
+
 function calcularDesconto() {
     var valorTotal = parseFloat(document.getElementById('valorTotal').value.replace('.', '').replace(',', '.'));
     var valorTotalN = parseFloat(document.getElementById('valorTotalN').value.replace('.', '').replace(',', '.'));
@@ -250,20 +265,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
 
 
-async function enviarEmailResultados(payload){
-  try {
-    await fetch(EMAIL_WEBHOOK_URL, {
-      method: "POST",
-      mode: "no-cors", // importante, pois o Apps Script não libera CORS
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    alert("Solicitação de envio de e-mail realizada! 📧");
-  } catch (err) {
-    console.error("Erro ao chamar webhook:", err);
-    alert("Falha ao solicitar envio do e-mail.");
-  }
-}
+
 
 
 
